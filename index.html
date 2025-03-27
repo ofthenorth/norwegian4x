@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Norwegian 4x4 Timer Online</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="styles.css">
+    <meta name="theme-color" content="#1a1a2e">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&family=Rubik:wght@500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <div class="title-container">
+            <div class="starburst"></div>
+            <h1>NORWEGIAN<br><span>4×4 TIMER</span></h1>
+        </div>
+        
+        <div class="timer-display">
+            <div class="status-indicator"></div>
+            <div class="current-phase">READY</div>
+            <div class="timer-container">
+                <div class="countdown">04:00</div>
+                <div class="milliseconds">00</div>
+            </div>
+            <div class="progress-bar">
+                <div class="progress"></div>
+            </div>
+            <div class="timer-info">
+                <div class="total-time">Total: 00:00:00</div>
+                <div class="rounds">Round: 0/4</div>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <button id="startBtn" class="btn start">START</button>
+            <button id="resetBtn" class="btn reset">RESET</button>
+        </div>
+        
+        <div class="celebration-container">
+            <div class="confetti-container"></div>
+            <div class="completion-message">WORKOUT COMPLETE!</div>
+        </div>
+       
+    </div>
+  
+   
+        <div class="donation-container">
+            <script type='text/javascript' src='https://storage.ko-fi.com/cdn/widget/Widget_2.js'></script>
+            <script type='text/javascript'>kofiwidget2.init('Support me on Ko-fi', '#06d6a0', 'K3K11CKI1M');kofiwidget2.draw();</script>
+        </div>
+    
+    <script src="script.js"></script>
+    <script>
+        // Register service worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('service-worker.js')
+                .then(reg => console.log('Service Worker registered', reg))
+                .catch(err => console.log('Service Worker registration failed', err));
+        }
+    </script>
+</body>
+</html>
