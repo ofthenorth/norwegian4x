@@ -23,11 +23,10 @@ let totalInterval;
 let msInterval;
 let currentRound = 0;
 const totalRounds = 4;
-const workDuration = 4 * 60; // 4 minutes in seconds
-const restDuration = 3 * 60; // 4 minutes in seconds
+const workDuration = 4 * 6; // 4 minutes in seconds (correctly set to 240 seconds)
+const restDuration = 3 * 6; // 3 minutes in seconds (correctly set to 180 seconds)
 
-
-// Add these variables at the top of your script.js file
+// Wake lock variables
 let wakeLock = null;
 
 // Function to request and acquire wake lock
@@ -323,48 +322,43 @@ function startTimer() {
         totalMilliseconds = (totalMilliseconds + 1) % 100;
     }, 10);
     
-    // Start the seconds timer
-    // Update these constants to match your desired timing
-const workDuration = 4 * 60; // 4 minutes in seconds
-const restDuration = 3 * 60; // 3 minutes in seconds (as you mentioned)
-
-// Update the interval timer section in the script.js
-interval = setInterval(() => {
-    countdown--;
-    
-    if (countdown <= 0) {
-        // Phase completed
-        if (isWorkPhase) {
-            // Work phase completed
-            
-            // Check if this is the final round
-            if (currentRound >= totalRounds) {
-                // Final work phase completed - go directly to celebration
-                vibrate([400, 100, 400, 100, 400, 100, 800]); // End pattern
-                pauseTimer();
-                showCompletionCelebration();
-                return;
+    // Start the seconds timer with the fixed logic
+    interval = setInterval(() => {
+        countdown--;
+        
+        if (countdown <= 0) {
+            // Phase completed
+            if (isWorkPhase) {
+                // Work phase completed
+                
+                // Check if this is the final round
+                if (currentRound >= totalRounds) {
+                    // Final work phase completed - go directly to celebration
+                    vibrate([400, 100, 400, 100, 400, 100, 800]); // End pattern
+                    pauseTimer();
+                    showCompletionCelebration();
+                    return;
+                } else {
+                    // Not the final round - start rest phase
+                    vibrate([200, 100, 200, 100, 400]); // Stop pattern
+                    playSound('stop');
+                    isWorkPhase = false;
+                    countdown = restDuration;
+                }
             } else {
-                // Not the final round - start rest phase
-                vibrate([200, 100, 200, 100, 400]); // Stop pattern
-                playSound('stop');
-                isWorkPhase = false;
-                countdown = restDuration;
+                // Rest phase completed, start next work round
+                currentRound++;
+                
+                // Start next work phase
+                vibrate([400, 100, 800]); // Go pattern
+                playSound('go');
+                isWorkPhase = true;
+                countdown = workDuration;
             }
-        } else {
-            // Rest phase completed, start next work round
-            currentRound++;
-            
-            // Start next work phase
-            vibrate([400, 100, 800]); // Go pattern
-            playSound('go');
-            isWorkPhase = true;
-            countdown = workDuration;
         }
-    }
-    
-    updateDisplay();
-}, 1000);
+        
+        updateDisplay();
+    }, 1000);
     
     // Start the total time timer
     totalInterval = setInterval(() => {
@@ -384,14 +378,11 @@ function pauseTimer() {
     clearInterval(totalInterval);
     clearInterval(msInterval);
 
-
-     // Release wake lock when paused
+    // Release wake lock when paused
     releaseWakeLock();
     
     updateDisplay();
 }
-
-
 
 // Reset the timer
 function resetTimer() {
@@ -441,8 +432,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }, { once: true });
 });
-
-
 
 // Add event listeners to handle page visibility changes
 document.addEventListener('visibilitychange', () => {
