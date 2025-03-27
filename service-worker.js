@@ -1,5 +1,5 @@
 // service-worker.js
-const CACHE_NAME = 'norwegian-4x4-timer-V1.0.2';
+const CACHE_NAME = 'norwegian-4x4-timer-V1.0.3';
 const urlsToCache = [
     './',
     './index.html',
