@@ -26,6 +26,44 @@ const totalRounds = 4;
 const workDuration = 4 * 60; // 4 minutes in seconds
 const restDuration = 3 * 60; // 4 minutes in seconds
 
+
+// Add these variables at the top of your script.js file
+let wakeLock = null;
+
+// Function to request and acquire wake lock
+async function requestWakeLock() {
+    try {
+        if ('wakeLock' in navigator) {
+            wakeLock = await navigator.wakeLock.request('screen');
+            console.log('Wake Lock activated');
+            
+            // Add event listener to reacquire wake lock if it's released
+            wakeLock.addEventListener('release', () => {
+                console.log('Wake Lock released');
+                // Try to reacquire the wake lock if we're still running
+                if (isRunning) {
+                    requestWakeLock();
+                }
+            });
+        }
+    } catch (err) {
+        console.error(`Wake Lock error: ${err.name}, ${err.message}`);
+    }
+}
+
+// Function to release wake lock
+async function releaseWakeLock() {
+    if (wakeLock !== null) {
+        try {
+            await wakeLock.release();
+            wakeLock = null;
+            console.log('Wake Lock released');
+        } catch (err) {
+            console.error(`Wake Lock release error: ${err.name}, ${err.message}`);
+        }
+    }
+}
+
 // Format time as MM:SS
 function formatTime(seconds) {
     const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
@@ -266,6 +304,9 @@ function startTimer() {
     isRunning = true;
     isPaused = false;
     
+    // Request wake lock to prevent screen from dimming
+    requestWakeLock();
+    
     if (currentRound === 0) {
         currentRound = 1;
         isWorkPhase = true;
@@ -334,8 +375,15 @@ function pauseTimer() {
     clearInterval(interval);
     clearInterval(totalInterval);
     clearInterval(msInterval);
+
+
+     // Release wake lock when paused
+    releaseWakeLock();
+    
     updateDisplay();
 }
+
+
 
 // Reset the timer
 function resetTimer() {
@@ -384,4 +432,17 @@ document.addEventListener('DOMContentLoaded', function() {
             navigator.vibrate(1);
         }
     }, { once: true });
+});
+
+
+
+// Add event listeners to handle page visibility changes
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && isRunning) {
+        // Reacquire wake lock when page becomes visible again and timer is running
+        requestWakeLock();
+    } else if (document.visibilityState === 'hidden') {
+        // Release wake lock when page is hidden to save battery
+        releaseWakeLock();
+    }
 });
