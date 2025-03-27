@@ -1,4 +1,4 @@
-// script.js
+// script.js - Production version
 const startBtn = document.getElementById('startBtn');
 const resetBtn = document.getElementById('resetBtn');
 const countdownEl = document.querySelector('.countdown');
@@ -24,14 +24,16 @@ let msInterval;
 let currentRound = 0;
 const totalRounds = 4;
 const workDuration = 4 * 60; // 4 minutes in seconds
-const restDuration = 3 * 60; // 3 minutes in seconds
+const restDuration = 3 * 60; // 4 minutes in seconds
 
+// Format time as MM:SS
 function formatTime(seconds) {
     const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
     const secs = (seconds % 60).toString().padStart(2, '0');
     return `${mins}:${secs}`;
 }
 
+// Format total time as HH:MM:SS
 function formatTotalTime(seconds) {
     const hours = Math.floor(seconds / 3600).toString().padStart(2, '0');
     const mins = Math.floor((seconds % 3600) / 60).toString().padStart(2, '0');
@@ -39,6 +41,7 @@ function formatTotalTime(seconds) {
     return `${hours}:${mins}:${secs}`;
 }
 
+// Update progress bar based on current countdown
 function updateProgressBar() {
     let maxDuration = isWorkPhase ? workDuration : restDuration;
     let currentTime = maxDuration - countdown;
@@ -46,6 +49,7 @@ function updateProgressBar() {
     progressBar.style.width = `${percentage}%`;
 }
 
+// Update all display elements
 function updateDisplay() {
     countdownEl.textContent = formatTime(countdown);
     millisecondsEl.textContent = milliseconds.toString().padStart(2, '0');
@@ -77,42 +81,46 @@ function updateDisplay() {
     }
 }
 
-// Improved vibration function
+// Enhanced vibration function
 function vibrate(pattern) {
     if ('vibrate' in navigator) {
         try {
-            // Make patterns stronger for better noticeability
-            // For work end (stop)
-            if (pattern.length === 5) {
-                pattern = [300, 150, 300, 150, 600]; // Stronger stop pattern
-            } 
-            // For rest end (go)
-            else if (pattern.length === 3) {
-                pattern = [600, 150, 1000]; // Stronger go pattern
-            }
-            // For completion
-            else {
-                pattern = [600, 150, 600, 150, 600, 150, 1200]; // Stronger completion pattern
+            // Apply pattern based on context
+            if (pattern.length === 3) {
+                // GO pattern - starting work
+                navigator.vibrate([100, 50, 800, 50, 800]);
+            } else if (pattern.length === 5) {
+                // STOP pattern - work ending, rest starting
+                navigator.vibrate([300, 100, 300, 100, 600, 100, 300]);
+            } else {
+                // COMPLETION pattern
+                navigator.vibrate([400, 100, 400, 100, 400, 100, 1000, 200, 400, 100, 1000]);
             }
             
-            // Try to vibrate multiple times for devices that have weak vibration
-            navigator.vibrate(pattern);
-            
-            // Vibrate again after a brief pause to make it more noticeable
+            // Repeat key vibrations after delay for better noticeability
             setTimeout(() => {
-                navigator.vibrate(pattern);
-            }, 1500);
-            
-            console.log("Vibration activated", pattern);
+                if (pattern.length > 4) { // Only repeat important patterns
+                    navigator.vibrate(pattern);
+                }
+            }, 500);
         } catch (e) {
-            console.error("Vibration failed", e);
+            // Silently fail in production
         }
-    } else {
-        console.log("Vibration not supported on this device");
     }
 }
 
-// Add this function to script.js
+// Button feedback vibration
+function buttonFeedback() {
+    if ('vibrate' in navigator) {
+        try {
+            navigator.vibrate(50);
+        } catch (e) {
+            // Silently fail in production
+        }
+    }
+}
+
+// Generate audio feedback
 function playSound(type) {
     try {
         const audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -122,69 +130,67 @@ function playSound(type) {
         oscillator.connect(gainNode);
         gainNode.connect(audioContext.destination);
         
-        // Different sounds for different events
-        if (type === 'complete') {
-            // Celebratory sound
-            oscillator.type = 'sine';
-            oscillator.frequency.value = 800;
-            gainNode.gain.value = 0.3;
-            
-            oscillator.start();
-            
-            // Create a rising celebratory tone
-            oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
-            oscillator.frequency.linearRampToValueAtTime(1200, audioContext.currentTime + 0.2);
-            oscillator.frequency.linearRampToValueAtTime(800, audioContext.currentTime + 0.4);
-            oscillator.frequency.linearRampToValueAtTime(1200, audioContext.currentTime + 0.6);
-            
-            // Fade out
-            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.8);
-            
-            // Stop after pattern finishes
-            setTimeout(() => { oscillator.stop(); }, 800);
-        } else if (type === 'stop') {
-            // Work ended sound
-            oscillator.type = 'square';
-            oscillator.frequency.value = 220;
-            gainNode.gain.value = 0.2;
-            
-            oscillator.start();
-            
-            // Two-tone pattern
-            oscillator.frequency.setValueAtTime(220, audioContext.currentTime);
-            oscillator.frequency.setValueAtTime(180, audioContext.currentTime + 0.2);
-            oscillator.frequency.setValueAtTime(220, audioContext.currentTime + 0.4);
-            
-            // Fade out
-            gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
-            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.6);
-            
-            setTimeout(() => { oscillator.stop(); }, 600);
-        } else {
-            // Rest ended sound (go)
-            oscillator.type = 'triangle';
-            oscillator.frequency.value = 440;
-            gainNode.gain.value = 0.2;
-            
-            oscillator.start();
-            
-            // Rising tone
-            oscillator.frequency.setValueAtTime(440, audioContext.currentTime);
-            oscillator.frequency.linearRampToValueAtTime(880, audioContext.currentTime + 0.4);
-            
-            // Fade out
-            gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
-            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
-            
-            setTimeout(() => { oscillator.stop(); }, 500);
+        switch(type) {
+            case 'complete':
+                // Celebratory sound
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+                oscillator.frequency.linearRampToValueAtTime(1200, audioContext.currentTime + 0.2);
+                oscillator.frequency.linearRampToValueAtTime(800, audioContext.currentTime + 0.4);
+                oscillator.frequency.linearRampToValueAtTime(1200, audioContext.currentTime + 0.6);
+                
+                gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.8);
+                
+                oscillator.start();
+                setTimeout(() => oscillator.stop(), 800);
+                break;
+                
+            case 'stop':
+                // Work ended sound
+                oscillator.type = 'square';
+                oscillator.frequency.setValueAtTime(220, audioContext.currentTime);
+                oscillator.frequency.setValueAtTime(180, audioContext.currentTime + 0.2);
+                oscillator.frequency.setValueAtTime(220, audioContext.currentTime + 0.4);
+                
+                gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.6);
+                
+                oscillator.start();
+                setTimeout(() => oscillator.stop(), 600);
+                break;
+                
+            case 'go':
+                // Rest ended sound
+                oscillator.type = 'triangle';
+                oscillator.frequency.setValueAtTime(440, audioContext.currentTime);
+                oscillator.frequency.linearRampToValueAtTime(880, audioContext.currentTime + 0.4);
+                
+                gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+                
+                oscillator.start();
+                setTimeout(() => oscillator.stop(), 500);
+                break;
+                
+            case 'button':
+                // Simple click feedback
+                oscillator.type = 'sine';
+                oscillator.frequency.value = 660;
+                
+                gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+                
+                oscillator.start();
+                setTimeout(() => oscillator.stop(), 100);
+                break;
         }
-        
     } catch (e) {
-        console.error("Audio failed", e);
+        // Silently fail in production
     }
 }
 
+// Create confetti animation elements
 function createConfetti() {
     confettiContainer.innerHTML = '';
     const colors = ['#06d6a0', '#ffd166', '#ef476f', '#118ab2', '#ffffff'];
@@ -232,8 +238,7 @@ function createConfetti() {
     }
 }
 
-// Update this part in the script.js file
-// In the showCompletionCelebration function:
+// Display completion celebration
 function showCompletionCelebration() {
     createConfetti();
     celebrationContainer.classList.add('active');
@@ -242,20 +247,22 @@ function showCompletionCelebration() {
     currentRound = 4; // Keep it at 4 until full reset
     updateDisplay();
     
-    // Vibrate and play sound
+    // Enhanced celebration vibration pattern for completeness
     vibrate([400, 100, 400, 100, 400, 100, 800]);
     playSound('complete');
     
-    // Close celebration after 7 seconds and reset
+    // Close celebration after 7 seconds and fully reset
     setTimeout(() => {
         celebrationContainer.classList.remove('active');
         resetTimer(); // Full reset after celebration ends
     }, 7000);
 }
 
+// Start the timer
 function startTimer() {
     if (isRunning) return;
     
+    buttonFeedback();
     isRunning = true;
     isPaused = false;
     
@@ -279,34 +286,33 @@ function startTimer() {
     interval = setInterval(() => {
         countdown--;
         
-        // In the interval timer:
-if (countdown <= 0) {
-    // Phase completed
-    if (isWorkPhase) {
-        // Work phase completed, start rest phase
-        vibrate([200, 100, 200, 100, 400]); // Stop pattern
-        playSound('stop');
-        isWorkPhase = false;
-        countdown = restDuration;
-    } else {
-        // Rest phase completed, start next round or end
-        currentRound++;
-        
-        if (currentRound > totalRounds) {
-            // All rounds completed
-            vibrate([400, 100, 400, 100, 400, 100, 800]); // End pattern
-            pauseTimer();
-            showCompletionCelebration();
-            return;
+        if (countdown <= 0) {
+            // Phase completed
+            if (isWorkPhase) {
+                // Work phase completed, start rest phase
+                vibrate([200, 100, 200, 100, 400]); // Stop pattern
+                playSound('stop');
+                isWorkPhase = false;
+                countdown = restDuration;
+            } else {
+                // Rest phase completed, start next round or end
+                currentRound++;
+                
+                if (currentRound > totalRounds) {
+                    // All rounds completed
+                    vibrate([400, 100, 400, 100, 400, 100, 800]); // End pattern
+                    pauseTimer();
+                    showCompletionCelebration();
+                    return;
+                }
+                
+                // Start next work phase
+                vibrate([400, 100, 800]); // Go pattern
+                playSound('go');
+                isWorkPhase = true;
+                countdown = workDuration;
+            }
         }
-        
-        // Start next work phase
-        vibrate([400, 100, 800]); // Go pattern
-        playSound('go');
-        isWorkPhase = true;
-        countdown = workDuration;
-    }
-}
         
         updateDisplay();
     }, 1000);
@@ -318,9 +324,11 @@ if (countdown <= 0) {
     }, 1000);
 }
 
+// Pause the timer
 function pauseTimer() {
     if (!isRunning) return;
     
+    buttonFeedback();
     isRunning = false;
     isPaused = true;
     clearInterval(interval);
@@ -329,6 +337,7 @@ function pauseTimer() {
     updateDisplay();
 }
 
+// Reset the timer
 function resetTimer() {
     pauseTimer();
     countdown = workDuration;
@@ -344,7 +353,9 @@ function resetTimer() {
     celebrationContainer.classList.remove('active');
 }
 
+// Event listeners
 startBtn.addEventListener('click', () => {
+    buttonFeedback();
     if (isRunning) {
         pauseTimer();
     } else {
@@ -352,12 +363,25 @@ startBtn.addEventListener('click', () => {
     }
 });
 
-resetBtn.addEventListener('click', resetTimer);
+resetBtn.addEventListener('click', () => {
+    buttonFeedback();
+    resetTimer();
+});
 
 // Close celebration when clicked
 celebrationContainer.addEventListener('click', () => {
     celebrationContainer.classList.remove('active');
+    resetTimer();
 });
 
-// Initialize display
-resetTimer();
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+    resetTimer();
+    
+    // Request vibration on first interaction
+    document.body.addEventListener('click', function() {
+        if ('vibrate' in navigator) {
+            navigator.vibrate(1);
+        }
+    }, { once: true });
+});
