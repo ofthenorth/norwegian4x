@@ -23,8 +23,8 @@ let totalInterval;
 let msInterval;
 let currentRound = 0;
 const totalRounds = 4;
-const workDuration = 4 * 6; // 4 minutes in seconds (correctly set to 240 seconds)
-const restDuration = 3 * 6; // 3 minutes in seconds (correctly set to 180 seconds)
+const workDuration = 4 * 60; // 4 minutes in seconds (correctly set to 240 seconds)
+const restDuration = 3 * 60; // 3 minutes in seconds (correctly set to 180 seconds)
 
 // Wake lock variables
 let wakeLock = null;
