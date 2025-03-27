@@ -324,39 +324,47 @@ function startTimer() {
     }, 10);
     
     // Start the seconds timer
-    interval = setInterval(() => {
-        countdown--;
-        
-        if (countdown <= 0) {
-            // Phase completed
-            if (isWorkPhase) {
-                // Work phase completed, start rest phase
+    // Update these constants to match your desired timing
+const workDuration = 4 * 60; // 4 minutes in seconds
+const restDuration = 3 * 60; // 3 minutes in seconds (as you mentioned)
+
+// Update the interval timer section in the script.js
+interval = setInterval(() => {
+    countdown--;
+    
+    if (countdown <= 0) {
+        // Phase completed
+        if (isWorkPhase) {
+            // Work phase completed
+            
+            // Check if this is the final round
+            if (currentRound >= totalRounds) {
+                // Final work phase completed - go directly to celebration
+                vibrate([400, 100, 400, 100, 400, 100, 800]); // End pattern
+                pauseTimer();
+                showCompletionCelebration();
+                return;
+            } else {
+                // Not the final round - start rest phase
                 vibrate([200, 100, 200, 100, 400]); // Stop pattern
                 playSound('stop');
                 isWorkPhase = false;
                 countdown = restDuration;
-            } else {
-                // Rest phase completed, start next round or end
-                currentRound++;
-                
-                if (currentRound > totalRounds) {
-                    // All rounds completed
-                    vibrate([400, 100, 400, 100, 400, 100, 800]); // End pattern
-                    pauseTimer();
-                    showCompletionCelebration();
-                    return;
-                }
-                
-                // Start next work phase
-                vibrate([400, 100, 800]); // Go pattern
-                playSound('go');
-                isWorkPhase = true;
-                countdown = workDuration;
             }
+        } else {
+            // Rest phase completed, start next work round
+            currentRound++;
+            
+            // Start next work phase
+            vibrate([400, 100, 800]); // Go pattern
+            playSound('go');
+            isWorkPhase = true;
+            countdown = workDuration;
         }
-        
-        updateDisplay();
-    }, 1000);
+    }
+    
+    updateDisplay();
+}, 1000);
     
     // Start the total time timer
     totalInterval = setInterval(() => {
