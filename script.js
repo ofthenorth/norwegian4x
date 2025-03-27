@@ -77,9 +77,111 @@ function updateDisplay() {
     }
 }
 
+// Improved vibration function
 function vibrate(pattern) {
     if ('vibrate' in navigator) {
-        navigator.vibrate(pattern);
+        try {
+            // Make patterns stronger for better noticeability
+            // For work end (stop)
+            if (pattern.length === 5) {
+                pattern = [300, 150, 300, 150, 600]; // Stronger stop pattern
+            } 
+            // For rest end (go)
+            else if (pattern.length === 3) {
+                pattern = [600, 150, 1000]; // Stronger go pattern
+            }
+            // For completion
+            else {
+                pattern = [600, 150, 600, 150, 600, 150, 1200]; // Stronger completion pattern
+            }
+            
+            // Try to vibrate multiple times for devices that have weak vibration
+            navigator.vibrate(pattern);
+            
+            // Vibrate again after a brief pause to make it more noticeable
+            setTimeout(() => {
+                navigator.vibrate(pattern);
+            }, 1500);
+            
+            console.log("Vibration activated", pattern);
+        } catch (e) {
+            console.error("Vibration failed", e);
+        }
+    } else {
+        console.log("Vibration not supported on this device");
+    }
+}
+
+// Add this function to script.js
+function playSound(type) {
+    try {
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        // Different sounds for different events
+        if (type === 'complete') {
+            // Celebratory sound
+            oscillator.type = 'sine';
+            oscillator.frequency.value = 800;
+            gainNode.gain.value = 0.3;
+            
+            oscillator.start();
+            
+            // Create a rising celebratory tone
+            oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+            oscillator.frequency.linearRampToValueAtTime(1200, audioContext.currentTime + 0.2);
+            oscillator.frequency.linearRampToValueAtTime(800, audioContext.currentTime + 0.4);
+            oscillator.frequency.linearRampToValueAtTime(1200, audioContext.currentTime + 0.6);
+            
+            // Fade out
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.8);
+            
+            // Stop after pattern finishes
+            setTimeout(() => { oscillator.stop(); }, 800);
+        } else if (type === 'stop') {
+            // Work ended sound
+            oscillator.type = 'square';
+            oscillator.frequency.value = 220;
+            gainNode.gain.value = 0.2;
+            
+            oscillator.start();
+            
+            // Two-tone pattern
+            oscillator.frequency.setValueAtTime(220, audioContext.currentTime);
+            oscillator.frequency.setValueAtTime(180, audioContext.currentTime + 0.2);
+            oscillator.frequency.setValueAtTime(220, audioContext.currentTime + 0.4);
+            
+            // Fade out
+            gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.6);
+            
+            setTimeout(() => { oscillator.stop(); }, 600);
+        } else {
+            // Rest ended sound (go)
+            oscillator.type = 'triangle';
+            oscillator.frequency.value = 440;
+            gainNode.gain.value = 0.2;
+            
+            oscillator.start();
+            
+            // Rising tone
+            oscillator.frequency.setValueAtTime(440, audioContext.currentTime);
+            oscillator.frequency.linearRampToValueAtTime(880, audioContext.currentTime + 0.4);
+            
+            // Fade out
+            gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+            
+            setTimeout(() => { oscillator.stop(); }, 500);
+        }
+        
+    } catch (e) {
+        console.error("Audio failed", e);
     }
 }
 
@@ -131,6 +233,7 @@ function createConfetti() {
 }
 
 // Update this part in the script.js file
+// In the showCompletionCelebration function:
 function showCompletionCelebration() {
     createConfetti();
     celebrationContainer.classList.add('active');
@@ -139,14 +242,9 @@ function showCompletionCelebration() {
     currentRound = 4; // Keep it at 4 until full reset
     updateDisplay();
     
-    // Play a sound if available
-    try {
-        const audio = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-achievement-bell-600.mp3');
-        audio.volume = 0.5;
-        audio.play();
-    } catch (e) {
-        console.log('Audio could not be played');
-    }
+    // Vibrate and play sound
+    vibrate([400, 100, 400, 100, 400, 100, 800]);
+    playSound('complete');
     
     // Close celebration after 7 seconds and reset
     setTimeout(() => {
@@ -181,31 +279,34 @@ function startTimer() {
     interval = setInterval(() => {
         countdown--;
         
-        if (countdown <= 0) {
-            // Phase completed
-            if (isWorkPhase) {
-                // Work phase completed, start rest phase
-                vibrate([200, 100, 200, 100, 400]); // Stop pattern
-                isWorkPhase = false;
-                countdown = restDuration;
-            } else {
-                // Rest phase completed, start next round or end
-                currentRound++;
-                
-                if (currentRound > totalRounds) {
-                    // All rounds completed
-                    vibrate([400, 100, 400, 100, 400, 100, 800]); // End pattern
-                    pauseTimer();
-                    showCompletionCelebration();
-                    return;
-                }
-                
-                // Start next work phase
-                vibrate([400, 100, 800]); // Go pattern
-                isWorkPhase = true;
-                countdown = workDuration;
-            }
+        // In the interval timer:
+if (countdown <= 0) {
+    // Phase completed
+    if (isWorkPhase) {
+        // Work phase completed, start rest phase
+        vibrate([200, 100, 200, 100, 400]); // Stop pattern
+        playSound('stop');
+        isWorkPhase = false;
+        countdown = restDuration;
+    } else {
+        // Rest phase completed, start next round or end
+        currentRound++;
+        
+        if (currentRound > totalRounds) {
+            // All rounds completed
+            vibrate([400, 100, 400, 100, 400, 100, 800]); // End pattern
+            pauseTimer();
+            showCompletionCelebration();
+            return;
         }
+        
+        // Start next work phase
+        vibrate([400, 100, 800]); // Go pattern
+        playSound('go');
+        isWorkPhase = true;
+        countdown = workDuration;
+    }
+}
         
         updateDisplay();
     }, 1000);
